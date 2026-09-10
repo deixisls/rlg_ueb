@@ -104,7 +104,10 @@ def obtener_ruta_video(nombre_video: str) -> tuple[str, str]:
     ruta_local = PATH_VIDEOS_LOCAL / str(nombre_video)
     if ruta_local.exists():
         return str(ruta_local), "local"
-    return f"{URL_BASE_REMOTE}{nombre_video}", "remota"
+    
+    # Asegurar la barra diagonal '/' entre el dominio base y el nombre del archivo
+    nombre_limpio = str(nombre_video).lstrip("/")
+    return f"{URL_BASE_REMOTE}/{nombre_limpio}", "remota"
 
 # ==========================================
 # 5. Buscador y Consulta (Con soporte CM)
