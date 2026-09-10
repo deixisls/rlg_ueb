@@ -12,7 +12,7 @@ PATH_JSON = Path("datosrlg.json")
 PATH_LOGO = Path("logocueb.png")
 PATH_MANOS = Path("assets/manos")
 
-URL_BASE_REMOTE = "https://pub-5f40f6c8037e4f68a0750b7c52988517.r2.dev"
+URL_BASE_REMOTE = "https://deixisls.alexgbarreto-3c4.workers.dev"
 
 st.set_page_config(
     page_title="Diccionario LSC | Universidad El Bosque",
