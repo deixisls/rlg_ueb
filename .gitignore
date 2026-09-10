@@ -1,0 +1,14 @@
+# Ignorar carpeta de videos locales (no se suben a Git)
+_lexrlg/
+
+# Ignorar carpetas de entornos virtuales y cachés de Python
+__pycache__/
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Ignorar archivos generados automáticamente que no necesitan versionarse
+datosrlg.json
+.DS_Store
+env_RLG/
+_lexrlg_low/
