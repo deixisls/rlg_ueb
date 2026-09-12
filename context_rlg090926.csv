@@ -1,0 +1,16 @@
+Context_project090926
+
+Parametro,Valor,Estado,Descripcion
+Proyecto,Diccionario Web LSC,En curso,Diccionario en Lengua de Señas basado en videos cortos.
+Arquitectura,Web Estática (HTML/CSS/JS + JSON),Definido,Despliegue gratuito y escalable sin servidor backend.
+Entorno_Desarrollo,Mac Studio (arm64) + Positron,Configurado,Uso nativo de recursos para procesamiento local.
+Lenguajes_Datos,Python (Pandas) / R (Tidyverse),Definido,Flujo híbrido para limpieza y manipulación del corpus.
+Estado_Datos,Excel (2772 filas),Pendiente Regex,Requiere limpieza de texto usando Expresiones Regulares.
+Estado_Videos,2772 archivos (10 GB),Pendiente Procesamiento,Requiere renombrar a snake_case y comprimir a .mp4 (H.264/720p).
+Script_convertir_datos.py,Desarrollado,Terminado,Lee Excel con Pandas y exporta datos.json para la web.
+Script_index.html,Desarrollado,Terminado,Frontend con barra de búsqueda JS que filtra el JSON.
+Script_limpiar_videos.py,Desarrollado,Terminado,Normaliza nombres de archivos para que sean seguros en la web.
+Script_iniciar_pruebas.py,Desarrollado,Terminado,Levanta un servidor http.server local y abre el navegador.
+Script_empaquetar.py,Desarrollado,Terminado,Crea un ZIP transportable ignorando archivos basura de Mac.
+Script_comprimir_videos.py,Desarrollado,Terminado,Usa subprocess y FFmpeg para reducir peso de videos sin perder calidad.
+Siguiente_Tarea_Codigo,limpiar_excel_regex.py,Pendiente,Definir patrón Regex y lenguaje (R o Python) para limpiar celdas.
