@@ -261,7 +261,7 @@ with st.container():
     
     with col_cred_1:
         st.markdown("""
-       ## **Universidad El Bosque**
+       ## **Universidad El Bosque (2026 ©) **
 
         **Departamento de Humanidades**
         
