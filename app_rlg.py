@@ -16,10 +16,28 @@ PATH_MANOS = Path("assets/manos")
 URL_BASE_REMOTE = "https://deixisls.alexgbarreto-3c4.workers.dev"
 
 st.set_page_config(
+    
     page_title="Diccionario LSC | Universidad El Bosque",
     page_icon="🤟",
     layout="wide"
 )
+# ==========================================
+# Métricas de Tráfico (Google Analytics 4)
+# ==========================================
+GA_ID = "G-7692T3YF60"  # Reemplaza con tu ID real de Google Analytics
+
+ga_html = f"""
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id={GA_ID}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){{dataLayer.push(arguments);}}
+        gtag('js', new Date());
+        gtag('config', '{GA_ID}');
+    </script>
+"""
+# Inyección silenciosa del script en el HTML
+st.components.v1.html(ga_html, height=0, width=0)
 
 # ==========================================
 # Funciones de Utilidad (Normalización)
@@ -160,7 +178,7 @@ def renderizar_bloque_busqueda(prefijo_id: str, titulo_bloque: str):
             with cols_img[idx]:
                 ruta_img = PATH_MANOS / f"{cm_etiqueta.lower()}.png"
                 if ruta_img.exists():
-                    st.image(str(ruta_img), width=50)
+                    st.image(str(ruta_img), width=120)
                 else:
                     st.caption(f"🖼️ [{cm_etiqueta}]")
     
@@ -234,10 +252,10 @@ def renderizar_bloque_busqueda(prefijo_id: str, titulo_bloque: str):
             valor_cm = str(seña.get(f'cm{i}', 'N/A')).strip()
             if valor_cm and valor_cm.upper() not in ["SIN ESPECIFICAR", "NAN", "N/A"]:
                 ruta_img_cm = PATH_MANOS / f"{valor_cm.lower()}.png"
-                c1, c2 = st.columns([1, 4])
+                c1, c2 = st.columns([2, 5])
                 with c1:
                     if ruta_img_cm.exists():
-                        st.image(str(ruta_img_cm), width=40)
+                        st.image(str(ruta_img_cm), width=120)
                 with c2:
                     st.write(f"**CM{i}:** {valor_cm.upper()}")
 
@@ -261,6 +279,7 @@ with st.container():
     
     with col_cred_1:
         st.markdown("""
+       **Proyecto Repositorio Léxico-Gramatical para la formación de traductores e intérpretes de la Lengua de Señas Colombiana (Versión 1.0)**
        **Universidad El Bosque (2026 ©)**
 
         **Departamento de Humanidades**
@@ -285,7 +304,7 @@ with st.container():
         **Área de Estudios de Lengua de Señas**  
         Coordinador: Alex G. Barreto, Phd. Msc.  
         
-        **Equipo de docentes sordos modelos que participaron en el modelaje de los videos de las señas:**  
+        **Equipo de docentes sordos que participaron en el modelaje y selección de los videos de las señas:**  
         - Lic. Omar Bustos, Esp. (2024-2026)  
         - Adm. Johana Balaguera, Mg. (2024-2026)  
         - Lic. Álvaro Herrán, Mg. (2024-2026)  
@@ -293,4 +312,20 @@ with st.container():
         - Lic. Daniel Hincapie (2026)  
         - Lic. Teresa Garzón, Mg. (2024-2025)  
         - Lic. Hugo Lopez, Mg. (2024)
+
+        **Fuentes documentales**
+
+        La selección de este repositorio partió de la revisión inicial de algunas compilaciones de léxico de la Lengua de de Señas Colombiana además de la discusión y selección del equipo de docentes sordos.
+
+        Instituto Nacional para Sordos e Instituto Caro y Cuervo (2006): Diccionario Básico de la Lengua de Señas Colombiana
+        https://educativo.insor.gov.co/diccionario/
+        https://lenguasyliteraturasnativas.caroycuervo.gov.co/pdf-del-diccionario-basico-de-la-lengua-de-senas-colombiana/ 
+
+        Federación Nacional de Sordos de Colombia (1996-2010): Glosarios de Lengua de Señas Colombiana Tomos 1 al 4.
+        https://fenascol.org.co
+
+        Semillero de Investigación Semilles Universidad Nacional de Colombia: Base de datos léxica de la LSC (LeSiCo)
+        https://sites.google.com/view/semilles/lesico?authuser=0
+
+
         """)
