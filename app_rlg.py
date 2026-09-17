@@ -3,12 +3,13 @@ from pathlib import Path
 import json
 import pandas as pd
 import streamlit as st
+import re
 
 # ==========================================
 # 1. Configuración y Rutas
 # ==========================================
 PATH_VIDEOS_LOCAL = Path("/Users/barreto/Positron_Projects/py_RLG/_lexrlg")
-PATH_CSV = Path("_datarlg_100926.csv")
+PATH_CSV = Path("_datarlg_190926.csv")  # Nombre del archivo actualizado
 PATH_JSON = Path("datosrlg.json")
 PATH_LOGO = Path("logocueb.png")
 PATH_MANOS = Path("assets/manos")
@@ -16,15 +17,15 @@ PATH_MANOS = Path("assets/manos")
 URL_BASE_REMOTE = "https://deixisls.alexgbarreto-3c4.workers.dev"
 
 st.set_page_config(
-    
     page_title="Diccionario LSC | Universidad El Bosque",
     page_icon="🤟",
     layout="wide"
 )
+
 # ==========================================
 # Métricas de Tráfico (Google Analytics 4)
 # ==========================================
-GA_ID = "G-7692T3YF60"  # Reemplaza con tu ID real de Google Analytics
+GA_ID = "G-7692T3YF60"
 
 ga_html = f"""
     <!-- Global site tag (gtag.js) - Google Analytics -->
@@ -36,14 +37,12 @@ ga_html = f"""
         gtag('config', '{GA_ID}');
     </script>
 """
-# Inyección silenciosa del script en el HTML
 st.components.v1.html(ga_html, height=0, width=0)
 
 # ==========================================
 # Funciones de Utilidad (Normalización)
 # ==========================================
 def normalizar_texto(texto: str) -> str:
-    """Elimina acentos y convierte a mayúsculas para búsquedas flexibles."""
     if not isinstance(texto, str):
         return ""
     texto_sin_acentos = ''.join(c for c in unicodedata.normalize('NFD', texto) if unicodedata.category(c) != 'Mn')
@@ -130,7 +129,6 @@ def obtener_datos(ruta_csv: Path, ruta_json: Path) -> list[dict]:
 datos = obtener_datos(PATH_CSV, PATH_JSON)
 st.caption(f"Corpus cargado: {len(datos)} entradas")
 
-# Extraer dinámicamente todas las etiquetas de CM únicas del corpus
 etiquetas_cm_unicas = set()
 for item in datos:
     for i in range(1, 6):
@@ -138,6 +136,9 @@ for item in datos:
         if val and val not in ["SIN ESPECIFICAR", "NAN", "N/A"]:
             etiquetas_cm_unicas.add(val)
 lista_cms_disponibles = sorted(list(etiquetas_cm_unicas))
+
+cursos_unicos = sorted(list(set(str(item.get("curso", "")) for item in datos if str(item.get("curso", "")).upper() not in ["SIN ESPECIFICAR", "NAN", "N/A", ""])))
+niveles_unicos = sorted(list(set(str(item.get("nivel", "")) for item in datos if str(item.get("nivel", "")).upper() not in ["SIN ESPECIFICAR", "NAN", "N/A", ""])))
 
 def obtener_ruta_video(nombre_video: str) -> tuple[str, str]:
     ruta_local = PATH_VIDEOS_LOCAL / str(nombre_video)
@@ -152,99 +153,126 @@ def obtener_ruta_video(nombre_video: str) -> tuple[str, str]:
 def renderizar_bloque_busqueda(prefijo_id: str, titulo_bloque: str):
     st.markdown(f"### {titulo_bloque}")
     
-    # --- ENTRADA 1: Búsqueda por CM ---
-    cms_seleccionadas = st.multiselect(
-        "1. Buscar por Configuración Manual (CM):", 
-        options=lista_cms_disponibles,
-        key=f"{prefijo_id}_cm"
+    # --- BÚSQUEDA RÁPIDA ---
+    texto_glosa = st.text_input(
+        "🔍 Búsqueda rápida (Glosa):", 
+        placeholder="Ej. YO, FAMILIA...",
+        key=f"{prefijo_id}_glosa"
     )
+    glosa_norm = normalizar_texto(texto_glosa)
     
-    # Lógica booleana si hay más de 1 selección
-    if len(cms_seleccionadas) > 1:
-        logica_cm = st.radio(
-            "Operador lógico para múltiples CM:", 
-            ["AND (Debe contener todas)", "OR (Puede contener cualquiera)"], 
-            horizontal=True, 
-            key=f"{prefijo_id}_logica"
+    # --- BÚSQUEDA AVANZADA ---
+    with st.expander("⚙️ Búsqueda Avanzada"):
+        texto_def = st.text_input(
+            "Filtrar por definición:", 
+            placeholder="Palabra clave en el significado...",
+            key=f"{prefijo_id}_def"
         )
-    else:
-        logica_cm = "OR" # Por defecto si hay 1 o 0
+        def_norm = normalizar_texto(texto_def)
         
-    # Renderizado visual de las CMs seleccionadas (reemplaza el menú flotante)
-    if cms_seleccionadas:
-        st.write("Visualización de CM:")
-        cols_img = st.columns(len(cms_seleccionadas) + (5 - len(cms_seleccionadas) if len(cms_seleccionadas) < 5 else 0))
-        for idx, cm_etiqueta in enumerate(cms_seleccionadas):
-            with cols_img[idx]:
-                ruta_img = PATH_MANOS / f"{cm_etiqueta.lower()}.png"
-                if ruta_img.exists():
-                    st.image(str(ruta_img), width=120)
-                else:
-                    st.caption(f"🖼️ [{cm_etiqueta}]")
-    
-    # --- ENTRADA 2: Búsqueda por Glosa/Definición ---
-    texto_busqueda = st.text_input(
-        "2. Buscar por Glosa o Significado:", 
-        placeholder="Ej. LICENCIA o una palabra clave...",
-        key=f"{prefijo_id}_texto"
-    )
-    texto_norm = normalizar_texto(texto_busqueda)
+        col_filtros1, col_filtros2 = st.columns(2)
+        with col_filtros1:
+            filtro_curso = st.multiselect("Filtrar por Curso:", options=cursos_unicos, key=f"{prefijo_id}_curso")
+        with col_filtros2:
+            filtro_nivel = st.multiselect("Filtrar por Nivel:", options=niveles_unicos, key=f"{prefijo_id}_nivel")
+            
+        cms_seleccionadas = st.multiselect(
+            "Configuración Manual (CM):", 
+            options=lista_cms_disponibles,
+            key=f"{prefijo_id}_cm"
+        )
+        
+        logica_cm = "OR"
+        if len(cms_seleccionadas) > 1:
+            logica_cm = st.radio(
+                "Operador lógico CM:", 
+                ["AND (Todas)", "OR (Cualquiera)"], 
+                horizontal=True, 
+                key=f"{prefijo_id}_logica"
+            )
+            
+        if cms_seleccionadas:
+            cols_img = st.columns(len(cms_seleccionadas) + (5 - len(cms_seleccionadas) if len(cms_seleccionadas) < 5 else 0))
+            for idx, cm_etiqueta in enumerate(cms_seleccionadas):
+                with cols_img[idx]:
+                    ruta_img = PATH_MANOS / f"{cm_etiqueta.lower()}.png"
+                    if ruta_img.exists():
+                        st.image(str(ruta_img), width=80)
+                    else:
+                        st.caption(f"🖼️ [{cm_etiqueta}]")
 
-    # --- Lógica de Filtrado ---
+    # --- LÓGICA DE FILTRADO ESTRICTO (\b) ---
     resultados = []
     for item in datos:
-        match_texto = True
+        # 1. Filtro Glosa Rápida (Usa glosa_limpia)
+        match_glosa = True
+        if glosa_norm:
+            valor_glosa = normalizar_texto(str(item.get("glosa_limpia", "")))
+            if not re.search(rf"\b{re.escape(glosa_norm)}\b", valor_glosa):
+                match_glosa = False
+
+        # 2. Filtro Definición (Usa definicion)
+        match_def = True
+        if def_norm:
+            valor_def = normalizar_texto(str(item.get("definicion", "")))
+            if not re.search(rf"\b{re.escape(def_norm)}\b", valor_def):
+                match_def = False
+                
+        # 3. Filtros Curso y Nivel
+        match_curso = True
+        if filtro_curso:
+            valor_curso = str(item.get("curso", ""))
+            if valor_curso not in filtro_curso:
+                match_curso = False
+                
+        match_nivel = True
+        if filtro_nivel:
+            valor_nivel = str(item.get("nivel", ""))
+            if valor_nivel not in filtro_nivel:
+                match_nivel = False
+
+        # 4. Filtro CM
         match_cm = True
-        
-        # Filtro Texto (Glosa o Definición) - Ignora acentos y mayúsculas
-        if texto_norm:
-            glosa_norm = normalizar_texto(str(item.get("glosa", "")))
-            def_norm = normalizar_texto(str(item.get("definicion", "")))
-            match_texto = (texto_norm in glosa_norm) or (texto_norm in def_norm)
-            
-        # Filtro CM (Configuración Manual)
         if cms_seleccionadas:
-            # Extraer las CMs de la entrada actual
             cms_item = set(str(item.get(f"cm{i}", "")).strip().upper() for i in range(1, 6))
             if "AND" in logica_cm:
-                # Todas las CMs seleccionadas deben estar en los campos de la entrada
                 match_cm = all(cm in cms_item for cm in cms_seleccionadas)
             else:
-                # Al menos una CM seleccionada debe coincidir
                 match_cm = any(cm in cms_item for cm in cms_seleccionadas)
-                
-        # Consolidar filtros
-        if match_texto and match_cm:
+
+        # Consolidar validaciones
+        if match_glosa and match_def and match_curso and match_nivel and match_cm:
             resultados.append(item)
             
-    # --- Reproductor y Detalles ---
+    # --- INTERFAZ DE RESULTADOS ---
     if not resultados:
-        if cms_seleccionadas or texto_norm:
-            st.warning("No se encontraron resultados con los filtros actuales.")
+        if glosa_norm or def_norm or filtro_curso or filtro_nivel or cms_seleccionadas:
+            st.warning("No se encontraron señas con los filtros aplicados.")
         return
 
-    opciones = [f"{item.get('id_entrada', '')} - {item.get('glosa', '')}" for item in resultados]
-    seleccion = st.selectbox("3. Selecciona una seña para explorar:", opciones, key=f"{prefijo_id}_select")
+    # Usar glosa_limpia (y glosa_estandar como respaldo) para menús e interfaz
+    opciones = [f"{item.get('id_entrada', '')} - {item.get('glosa_limpia', item.get('glosa_estandar', ''))}" for item in resultados]
+    seleccion = st.selectbox("👉 Selecciona una seña para explorar:", opciones, key=f"{prefijo_id}_select")
     
     idx_seleccionado = opciones.index(seleccion)
     seña = resultados[idx_seleccionado]
     
     st.divider()
-    st.subheader(seña.get("glosa", "Sin Glosa"))
+    st.subheader(seña.get("glosa_limpia", seña.get("glosa_estandar", "Sin Glosa")))
     
-    # Video
     nombre_vid = seña.get("nombre_video", "")
     if nombre_vid and nombre_vid != "Sin especificar":
         origen, fuente = obtener_ruta_video(nombre_vid)
         st.video(origen)
-        st.caption(f"📁 Reproducción local: `{nombre_vid}`" if fuente == "local" else "🌐 Servidor remoto")
+        st.caption(f"📁 Local: `{nombre_vid}`" if fuente == "local" else "🌐 Nube")
     else:
         st.warning("Sin archivo de video asociado.")
         
-    # Acordeones de información
     with st.expander("📖 Definición y Detalles", expanded=True):
+        st.markdown(f"**Curso:** {seña.get('curso', 'N/A')} | **Nivel:** {seña.get('nivel', 'N/A')}")
         st.markdown(f"**Clase Gramatical:** {seña.get('clase_gramatical', 'N/A')}")
-        st.markdown(f"**Tipo de Seña:** {seña.get('tipo_de_sena', 'N/A')}")
+        # Ajustado a 'tipo_sena' basado en tu archivo
+        st.markdown(f"**Tipo de Seña:** {seña.get('tipo_sena', 'N/A')}")
         st.write(seña.get("definicion", "Sin definición."))
         
     with st.expander("🖐️ Configuraciones Manuales (CM)", expanded=False):
@@ -259,7 +287,6 @@ def renderizar_bloque_busqueda(prefijo_id: str, titulo_bloque: str):
                 with c2:
                     st.write(f"**CM{i}:** {valor_cm.upper()}")
 
-# Estructura a dos columnas (Bloque 1 y Bloque 2)
 col_b1, col_b2 = st.columns(2)
 
 with col_b1:
@@ -279,7 +306,8 @@ with st.container():
     
     with col_cred_1:
         st.markdown("""
-       **Proyecto Repositorio Léxico-Gramatical para la formación de traductores e intérpretes de la Lengua de Señas Colombiana (Versión 1.0)**
+       **Proyecto Repositorio Léxico-Gramatical para la formación de traductores e intérpretes de la Lengua de Señas Colombiana** 
+       **(Versión 1.0 *prueba beta*)**
        **Universidad El Bosque (2026 ©)**
 
         **Departamento de Humanidades**
@@ -297,6 +325,10 @@ with st.container():
 
         Jose F. Lesmes, Mg. 
         *Coordinador Área Curricular y Estudios de Traducción e Interpretación*
+
+        **Comentarios observaciones o sugerencias**
+        *¿Algún dato es incorrecto o incompleto? ¿Deseas hacer una contribución o comentario?*
+        Escribenos a: interpretacion@unbosque.edu.co o agbarretom@unbosque.edu.co
         """)
         
     with col_cred_2:
@@ -313,9 +345,18 @@ with st.container():
         - Lic. Teresa Garzón, Mg. (2024-2025)  
         - Lic. Hugo Lopez, Mg. (2024)
 
+        **Equipo de asistentes de investigación del semillero SABILES que participaron en la limpieza y anotación de los datos:**  
+        - Valentina Barrera, Intérprete profesional (2025)  
+        - Nataly Navarro, Intérprete profesional (2026)  
+        - Paola Ramirez, Intérprete Profesional (2026) 
+        - Yakeline Cárdenas, Intérprete Profesional (2026) 
+        - Yajaira Valencia, Intérprete Profesional (2026) 
+        - Angie Salinas, , Intérprete Profesional (2026)
+    
+
         **Fuentes documentales**
 
-        La selección de este repositorio partió de la revisión inicial de algunas compilaciones de léxico de la Lengua de de Señas Colombiana además de la discusión y selección del equipo de docentes sordos.
+        La selección de este repositorio partió de la revisión inicial de algunas compilaciones de léxico de la Lengua de de Señas Colombiana además de la discusión y selección por parte del equipo de docentes sordos.
 
         Instituto Nacional para Sordos e Instituto Caro y Cuervo (2006): Diccionario Básico de la Lengua de Señas Colombiana
         https://educativo.insor.gov.co/diccionario/
