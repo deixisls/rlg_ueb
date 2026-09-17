@@ -1,5 +1,6 @@
 # Ignorar carpeta de videos locales (no se suben a Git)
 _lexrlg/
+_lexrlg_low
 
 # Ignorar carpetas de entornos virtuales y cachés de Python
 __pycache__/
