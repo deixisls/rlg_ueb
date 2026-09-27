@@ -169,7 +169,7 @@ def obtener_ruta_video(nombre_video: str) -> tuple[str, str]:
 # ==========================================
 # 5. Módulo de Búsqueda y Visualización
 # ==========================================
-def renderizar_bloque_busqueda(prefijo_id: str, titulo_bloque: str):
+def renderizar_bloque_busqueda(prefijo_id: str, titulo_bloque: str, id_defecto: str = None):
     st.markdown(f"### {titulo_bloque}")
     
     # --- BÚSQUEDA RÁPIDA ---
@@ -269,9 +269,28 @@ def renderizar_bloque_busqueda(prefijo_id: str, titulo_bloque: str):
             st.warning("No se encontraron señas con los filtros aplicados.")
         return
 
-    # Usar glosa_limpia (y glosa_estandar como respaldo) para menús e interfaz
+      # Construir lista de opciones
     opciones = [f"{item.get('id_entrada', '')} - {item.get('glosa_limpia', item.get('glosa_estandar', ''))}" for item in resultados]
-    seleccion = st.selectbox("👉 Selecciona una seña para explorar:", opciones, key=f"{prefijo_id}_select")
+    
+    # Lógica de asignación de índice dinámico
+    indice_seleccion = 0 # Valor por defecto si hay filtros activos o no se encuentra el ID
+    
+    if id_defecto:
+        # Buscar la posición del id_defecto en las opciones disponibles
+        # Se añade " -" para garantizar coincidencia exacta del ID
+        para_buscar = f"{id_defecto} -"
+        for i, opcion in enumerate(opciones):
+            if str(opcion).startswith(para_buscar):
+                indice_seleccion = i
+                break
+
+    # Aplicar el índice dinámico al selectbox
+    seleccion = st.selectbox(
+        "👉 Selecciona una seña para explorar:", 
+        opciones, 
+        index=indice_seleccion,
+        key=f"{prefijo_id}_select"
+    )
     
     idx_seleccionado = opciones.index(seleccion)
     seña = resultados[idx_seleccionado]
@@ -309,10 +328,13 @@ def renderizar_bloque_busqueda(prefijo_id: str, titulo_bloque: str):
 col_b1, col_b2 = st.columns(2)
 
 with col_b1:
-    renderizar_bloque_busqueda("b1", "Buscador 1")
+    # Se pasa "997" para NUESTRO BOSQUE
+    renderizar_bloque_busqueda("b1", "Buscador 1", id_defecto="997")
 
 with col_b2:
-    renderizar_bloque_busqueda("b2", "Buscador 2 (Contraste)")
+    # Se pasa "1235" para UNIVERSIDAD
+    renderizar_bloque_busqueda("b2", "Buscador 2 (Contraste)", id_defecto="1235")
+
 
 
 # ==========================================
