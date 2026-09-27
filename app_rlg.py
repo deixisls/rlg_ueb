@@ -22,22 +22,41 @@ st.set_page_config(
     layout="wide"
 )
 
+import streamlit.components.v1 as components
+
 # ==========================================
 # Métricas de Tráfico (Google Analytics 4)
 # ==========================================
 GA_ID = "G-7692T3YF60"
 
-ga_html = f"""
-    <!-- Global site tag (gtag.js) - Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id={GA_ID}"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){{dataLayer.push(arguments);}}
-        gtag('js', new Date());
-        gtag('config', '{GA_ID}');
-    </script>
+# Inyección de JavaScript para salir del iframe de Streamlit
+ga_js = f"""
+<script>
+    // Evitar múltiples inyecciones si el código ya existe en el DOM
+    if (!window.parent.document.getElementById('ga-script')) {{
+        
+        // 1. Inyectar el script principal gtag.js en el head del padre
+        var gtagScript = window.parent.document.createElement('script');
+        gtagScript.id = 'ga-script';
+        gtagScript.async = true;
+        gtagScript.src = 'https://www.googletagmanager.com/gtag/js?id={GA_ID}';
+        window.parent.document.head.appendChild(gtagScript);
+
+        // 2. Inyectar la configuración inicial de Analytics
+        var gtagConfig = window.parent.document.createElement('script');
+        gtagConfig.innerHTML = `
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){{window.dataLayer.push(arguments);}}
+            gtag('js', new Date());
+            gtag('config', '{GA_ID}');
+        `;
+        window.parent.document.head.appendChild(gtagConfig);
+    }}
+</script>
 """
-st.components.v1.html(ga_html, height=0, width=0)
+# Ejecutar el componente sin dimensiones en la interfaz
+components.html(ga_js, height=0, width=0)
+
 
 # ==========================================
 # Funciones de Utilidad (Normalización)
